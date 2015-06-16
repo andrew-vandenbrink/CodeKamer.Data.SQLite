@@ -240,6 +240,13 @@ namespace CodeKamer.Data.SQLite
             return sqlite3_column_count(statementHandle);
         }
 
+        [DllImport("sqlite3", EntryPoint = "sqlite3_column_name", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr sqlite3_column_name(IntPtr statementHandle, int iCol);
+        private static string ColumnName(IntPtr statementHandle, int columnIndex)
+        {
+            return PtrToStringUTF8(sqlite3_column_name(statementHandle, columnIndex));
+        }
+
         [DllImport("sqlite3", EntryPoint = "sqlite3_column_type", CallingConvention = CallingConvention.Cdecl)]
         internal static extern int sqlite3_column_type(IntPtr statementHandle, int iCol);
         private static int ColumnType(IntPtr statementHandle, int columnIndex)
@@ -343,33 +350,33 @@ namespace CodeKamer.Data.SQLite
         public static Task<int> ExecuteNonQueryAsync(string connectionString, int flag, params string[] queries)
         {
             return Connection<int>(connectionString, flag, (dbHandle) =>
-            {
-                foreach (var query in queries)
-                {
-                    IntPtr statementHandle = Prepare(dbHandle, query);
-                    try
-                    {
-                        int stepResult = Step(statementHandle);
-                        if (stepResult != (int)SQLiteResultCode.SQLITE_DONE)
-                        {
-                            throw new SQLiteException(ErrorMessage(dbHandle), stepResult);
-                        }
-                    }
-                    finally
-                    {
-                        Finalize(statementHandle);
-                    }
-                }
-                return (int)SQLiteResultCode.SQLITE_OK;
-            });
+              {
+                  foreach (var query in queries)
+                  {
+                      IntPtr statementHandle = Prepare(dbHandle, query);
+                      try
+                      {
+                          int stepResult = Step(statementHandle);
+                          if (stepResult != (int)SQLiteResultCode.SQLITE_DONE)
+                          {
+                              throw new SQLiteException(ErrorMessage(dbHandle), stepResult);
+                          }
+                      }
+                      finally
+                      {
+                          Finalize(statementHandle);
+                      }
+                  }
+                  return (int)SQLiteResultCode.SQLITE_OK;
+              });
         }
 
-        public static Task<List<object[]>> ReadAsync(string connectionString, string query)
+        public static Task<List<object[]>> ReadAsync(string connectionString, string query, bool includeHeader = true)
         {
             return ReadAsync(connectionString, (int)(SQLiteOpenFlag.SQLITE_OPEN_READWRITE | SQLiteOpenFlag.SQLITE_OPEN_CREATE), query);
         }
 
-        public static Task<List<object[]>> ReadAsync(string connectionString, int flag, string query)
+        public static Task<List<object[]>> ReadAsync(string connectionString, int flag, string query, bool includeHeader = true)
         {
             return Connection<List<object[]>>(connectionString, flag, (dbHandle) =>
             {
@@ -395,6 +402,15 @@ namespace CodeKamer.Data.SQLite
                     }
 
                     object[] data;
+                    if (includeHeader)
+                    {
+                        data = new object[columnCount];
+                        for (int iColumn = 0; iColumn < columnCount; iColumn++)
+                        {
+                            data[iColumn] = ColumnName(statementHandle, iColumn);
+                        }
+                        result.Add(data);
+                    }
                     while (stepResult != (int)SQLiteResultCode.SQLITE_DONE)
                     {
                         switch (stepResult)
