@@ -1,10 +1,10 @@
 {
-    "version": "1.0.0-*",
-    "description": "",
+    "version": "1.0.1-*",
+    "description": "This package allow you to use SQLite in Dnx Core.",
     "authors": [ "Andrew van den Brink" ],
     "tags": [ "" ],
-    "projectUrl": "",
-    "licenseUrl": "",
+    "projectUrl": "https://github.com/andrew-vandenbrink/CodeKamer.Data.SQLite",
+    "licenseUrl": "https://github.com/andrew-vandenbrink/CodeKamer.Data.SQLite/blob/master/License.txt",
 
     "dependencies": {
         "System.Runtime.InteropServices": "4.0.20-beta-22816"

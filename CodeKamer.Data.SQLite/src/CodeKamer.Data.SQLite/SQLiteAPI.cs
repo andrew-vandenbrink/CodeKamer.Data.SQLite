@@ -350,25 +350,25 @@ namespace CodeKamer.Data.SQLite
         public static Task<int> ExecuteNonQueryAsync(string connectionString, int flag, params string[] queries)
         {
             return Connection<int>(connectionString, flag, (dbHandle) =>
-              {
-                  foreach (var query in queries)
-                  {
-                      IntPtr statementHandle = Prepare(dbHandle, query);
-                      try
-                      {
-                          int stepResult = Step(statementHandle);
-                          if (stepResult != (int)SQLiteResultCode.SQLITE_DONE)
-                          {
-                              throw new SQLiteException(ErrorMessage(dbHandle), stepResult);
-                          }
-                      }
-                      finally
-                      {
-                          Finalize(statementHandle);
-                      }
-                  }
-                  return (int)SQLiteResultCode.SQLITE_OK;
-              });
+            {
+                foreach (var query in queries)
+                {
+                    IntPtr statementHandle = Prepare(dbHandle, query);
+                    try
+                    {
+                        int stepResult = Step(statementHandle);
+                        if (stepResult != (int)SQLiteResultCode.SQLITE_DONE)
+                        {
+                            throw new SQLiteException(ErrorMessage(dbHandle), stepResult);
+                        }
+                    }
+                    finally
+                    {
+                        Finalize(statementHandle);
+                    }
+                }
+                return (int)SQLiteResultCode.SQLITE_OK;
+            });
         }
 
         public static Task<List<object[]>> ReadAsync(string connectionString, string query, bool includeHeader = true)
@@ -395,6 +395,11 @@ namespace CodeKamer.Data.SQLite
                         {
                             columnsType.Add(iColumn, ColumnType(statementHandle, iColumn));
                         }
+                    }
+                    else if (stepResult == (int)SQLiteResultCode.SQLITE_DONE) //no result
+                    {
+                        Finalize(statementHandle);
+                        return result;
                     }
                     else
                     {
